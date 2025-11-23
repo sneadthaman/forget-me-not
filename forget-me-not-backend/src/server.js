@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const { Queue } = require('bullmq');
+const requireAuth = require('./middleware/auth');
 
 const app = express();
 app.use(express.json());
@@ -13,15 +14,15 @@ const scanQueue = new Queue('scan_upcoming_dates', { connection: connection.conn
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // Trigger a scan job (for testing)
-app.post('/jobs/scan', async (req, res) => {
+app.post('/jobs/scan', requireAuth, async (req, res) => {
   const job = await scanQueue.add('scan_upcoming_dates', { trigger: 'manual' });
   res.json({ enqueued: true, id: job.id });
 });
 
 // CRUD endpoints
 app.use('/users', require('./routes/users'));
-app.use('/contacts', require('./routes/contacts'));
-app.use('/occasions', require('./routes/occasions'));
+app.use('/contacts', requireAuth, require('./routes/contacts'));
+app.use('/occasions', requireAuth, require('./routes/occasions'));
 
 app.listen(PORT, () => console.log(`Forget Me Not API listening on ${PORT}`));
 

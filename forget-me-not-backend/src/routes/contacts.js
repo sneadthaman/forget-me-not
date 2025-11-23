@@ -1,6 +1,9 @@
 const express = require('express');
 const supabase = require('../db');
+const requireAuth = require('../middleware/auth');
 const router = express.Router();
+
+router.use(requireAuth);
 
 // Update contact (PATCH)
 router.patch('/:id', async (req, res) => {
@@ -10,8 +13,10 @@ router.patch('/:id', async (req, res) => {
     .from('contacts')
     .update(updates)
     .eq('id', id)
+    .eq('user_id', req.user.id)
     .select();
   if (error) return res.status(400).json({ error });
+  if (!data || !data.length) return res.status(404).json({ error: 'contact_not_found' });
   res.json(data[0]);
 });
 
@@ -22,6 +27,7 @@ router.delete('/:id', async (req, res) => {
     .from('contacts')
     .delete()
     .eq('id', id)
+    .eq('user_id', req.user.id)
     .select();
   if (error) return res.status(400).json({ error });
   res.json({ deleted: !!data.length, id });
@@ -32,14 +38,15 @@ router.delete('/:id', async (req, res) => {
 router.get('/', async (req, res) => {
   const { data, error } = await supabase
     .from('contacts')
-    .select('*');
+    .select('*')
+    .eq('user_id', req.user.id);
   if (error) return res.status(400).json({ error });
   res.json(data);
 });
 
 // Create contact
 router.post('/', async (req, res) => {
-  const contact = req.body;
+  const contact = { ...req.body, user_id: req.user.id };
   const { data, error } = await supabase
     .from('contacts')
     .insert([contact])
@@ -51,6 +58,9 @@ router.post('/', async (req, res) => {
 // Get contacts for user
 router.get('/user/:user_id', async (req, res) => {
   const { user_id } = req.params;
+  if (user_id !== req.user.id) {
+    return res.status(403).json({ error: 'forbidden', message: 'Cannot access other users contacts' });
+  }
   const { data, error } = await supabase
     .from('contacts')
     .select('*')

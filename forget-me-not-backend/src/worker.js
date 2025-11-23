@@ -1,10 +1,7 @@
 require('dotenv').config();
-const { Worker, Queue, QueueScheduler } = require('bullmq');
+const { Worker, Queue } = require('bullmq');
+const generateText = require('./jobs/generateText');
 const connection = { connection: { url: process.env.REDIS_URL || 'redis://127.0.0.1:6379' } };
-
-// Ensure scheduler exists for delayed jobs and retries
-new QueueScheduler('scan_upcoming_dates', connection);
-new QueueScheduler('generate_text', connection);
 
 console.log('Worker connecting to', process.env.REDIS_URL || 'redis://127.0.0.1:6379');
 
@@ -20,7 +17,9 @@ const scanWorker = new Worker('scan_upcoming_dates', async job => {
 // generate_text worker
 const genWorker = new Worker('generate_text', async job => {
   console.log('Processing generate_text job', job.id, job.data);
-  // TODO: call OpenAI to create message, then push other jobs (generate_front_art, assemble_card_pdf)
+  const text = await generateText(job.data || {});
+  console.log('Generated text:', text);
+  // TODO: persist text to DB and enqueue next jobs (generate_front_art, assemble_card_pdf)
 }, connection);
 
 scanWorker.on('completed', job => console.log('scan completed', job.id));
