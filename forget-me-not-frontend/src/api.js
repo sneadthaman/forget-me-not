@@ -1,10 +1,38 @@
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:3000'; // Update if backend runs elsewhere
+const TOKEN_KEY = 'fmnauth';
 
 export const api = axios.create({
   baseURL: API_BASE,
 });
+
+export function setAuthToken(token) {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+    api.defaults.headers.common.Authorization = `Bearer ${token}`;
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+    delete api.defaults.headers.common.Authorization;
+  }
+}
+
+export function loadStoredToken() {
+  const t = localStorage.getItem(TOKEN_KEY);
+  if (t) {
+    api.defaults.headers.common.Authorization = `Bearer ${t}`;
+  }
+  return t;
+}
+
+// Auth
+export const login = (email, password) => api.post('/auth/login', { email, password });
+
+// Card jobs
+export const getCardJobs = () => api.get('/card-jobs');
+export const getCardJob = (id) => api.get(`/card-jobs/${id}`);
+export const triggerCardJobAction = (id, action) => api.post(`/card-jobs/${id}/actions/${action}`);
+export const updateCardJob = (id, updates) => api.patch(`/card-jobs/${id}`, updates);
 
 // Users
 export const getUsers = () => api.get('/users');

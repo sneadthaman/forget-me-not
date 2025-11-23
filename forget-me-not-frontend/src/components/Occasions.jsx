@@ -1,14 +1,23 @@
 import { useEffect, useState } from 'react';
-import { getOccasions, createOccasion, deleteOccasion } from '../api';
+import { getOccasions, createOccasion, deleteOccasion, getContacts } from '../api';
 
 export default function Occasions() {
   const [occasions, setOccasions] = useState([]);
+  const [contacts, setContacts] = useState([]);
   const [form, setForm] = useState({
-    user_id: '', contact_id: '', occasion_type: '', custom_label: '', date: '', lead_time_days: '', tone_preference: ''
+    contact_id: '', occasion_type: '', custom_label: '', date: '', lead_time_days: '', tone_preference: ''
   });
 
   useEffect(() => {
-    getOccasions().then(res => setOccasions(res.data));
+    getOccasions()
+      .then(res => setOccasions(res.data))
+      .catch(err => {
+        console.error(err);
+        alert('Failed to load occasions. Ensure token is set and backend is running.');
+      });
+    getContacts()
+      .then(res => setContacts(res.data))
+      .catch(err => console.error(err));
   }, []);
 
   const handleChange = e => {
@@ -19,7 +28,7 @@ export default function Occasions() {
     e.preventDefault();
     const res = await createOccasion(form);
     setOccasions([...occasions, res.data]);
-    setForm({ user_id: '', contact_id: '', occasion_type: '', custom_label: '', date: '', lead_time_days: '', tone_preference: '' });
+    setForm({ contact_id: '', occasion_type: '', custom_label: '', date: '', lead_time_days: '', tone_preference: '' });
   };
 
   const handleDelete = async id => {
@@ -31,8 +40,12 @@ export default function Occasions() {
     <div>
       <h2>Occasions</h2>
       <form onSubmit={handleSubmit}>
-        <input name="user_id" value={form.user_id} onChange={handleChange} placeholder="User ID" required />
-        <input name="contact_id" value={form.contact_id} onChange={handleChange} placeholder="Contact ID" required />
+        <select name="contact_id" value={form.contact_id} onChange={handleChange} required>
+          <option value="">Select contact</option>
+          {contacts.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
         <input name="occasion_type" value={form.occasion_type} onChange={handleChange} placeholder="Occasion Type" required />
         <input name="custom_label" value={form.custom_label} onChange={handleChange} placeholder="Custom Label" />
         <input name="date" value={form.date} onChange={handleChange} placeholder="Date (YYYY-MM-DD)" required />

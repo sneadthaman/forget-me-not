@@ -4,11 +4,16 @@ import { getContacts, createContact, deleteContact } from '../api';
 export default function Contacts() {
   const [contacts, setContacts] = useState([]);
   const [form, setForm] = useState({
-    user_id: '', name: '', relationship: '', address_line1: '', city: '', state: '', postal_code: '', country: '', email: ''
+    name: '', relationship: '', address_line1: '', city: '', state: '', postal_code: '', country: '', email: ''
   });
 
   useEffect(() => {
-    getContacts().then(res => setContacts(res.data));
+    getContacts()
+      .then(res => setContacts(res.data))
+      .catch(err => {
+        console.error(err);
+        alert('Failed to load contacts. Ensure token is set and backend is running.');
+      });
   }, []);
 
   const handleChange = e => {
@@ -19,7 +24,7 @@ export default function Contacts() {
     e.preventDefault();
     const res = await createContact(form);
     setContacts([...contacts, res.data]);
-    setForm({ user_id: '', name: '', relationship: '', address_line1: '', city: '', state: '', postal_code: '', country: '', email: '' });
+    setForm({ name: '', relationship: '', address_line1: '', city: '', state: '', postal_code: '', country: '', email: '' });
   };
 
   const handleDelete = async id => {

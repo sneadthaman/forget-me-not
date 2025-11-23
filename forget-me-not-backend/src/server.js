@@ -1,9 +1,11 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const { Queue } = require('bullmq');
 const requireAuth = require('./middleware/auth');
 
 const app = express();
+app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
@@ -12,6 +14,7 @@ const connection = { connection: { url: process.env.REDIS_URL || 'redis://127.0.
 const scanQueue = new Queue('scan_upcoming_dates', { connection: connection.connection });
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.use('/auth', require('./routes/auth'));
 
 // Trigger a scan job (for testing)
 app.post('/jobs/scan', requireAuth, async (req, res) => {
@@ -23,6 +26,7 @@ app.post('/jobs/scan', requireAuth, async (req, res) => {
 app.use('/users', require('./routes/users'));
 app.use('/contacts', requireAuth, require('./routes/contacts'));
 app.use('/occasions', requireAuth, require('./routes/occasions'));
+app.use('/card-jobs', require('./routes/cardJobs'));
 
 app.listen(PORT, () => console.log(`Forget Me Not API listening on ${PORT}`));
 
